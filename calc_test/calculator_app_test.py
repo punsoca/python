@@ -11,4 +11,4 @@ class AddTests(unittest.TestCase):
         self.assertEqual(6, CalculatorApp.add(1, 2, 3))
 
     def test_add_with_no_arguments_returns_0(self):
-        self.assertEqual(1, CalculatorApp.add())
+        self.assertEqual(0, CalculatorApp.add())
