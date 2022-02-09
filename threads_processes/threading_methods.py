@@ -13,7 +13,7 @@ def total_time(started):
     finished = time.perf_counter()
     return f'Total execution time is {round(finished-started,2)} second(s)'
 
-# the do_xxxxxxxx functions use time.sleep to test the different multi-threading methods 
+# the do_xxxxxxxx functions use time.sleep to test the different multi-threading methods
 def do_something():
     print('Sleeping one second...')
     time.sleep(1)
@@ -24,7 +24,7 @@ def do_something2(seconds):
     time.sleep(seconds)
     return f'Done sleeping {seconds} seconds.'
 
-def do_thread_concurrent_futures(seconds):
+def do_futures(seconds):
     print(f'Sleeping {seconds} second(s)...')
     time.sleep(seconds)
     return f'Done sleeping {seconds} seconds.'
@@ -41,25 +41,31 @@ def funcname(func):
 
 # ALL eight (8) multi-threading methods are decorated with @funcname
 # --------------------------------- 1. call function twice without threading ---------------------------------
-# calling the function twice result in the process running for a whole two seconds - this is because this code waits for
-# the first function call to complete before executing the function the second time (total of 2 seconds execution time)
 @funcname
 def call_func_twice_no_threading():
+    '''
+    calling the function twice result in the process running for a whole two seconds - this is because this code waits for
+    the first function call to complete before executing the function the second time (total of 2 seconds execution time)
+
+    '''
 
     start = start_timer()
 
-    # calls do_something function twice 
+    # calls do_something function twice
     do_something()
     do_something()
 
     print(f'{total_time(start)}\n')
 
 # --------------------------------- 2.  execute a function using threading ---------------------------------
-# use python threading to run concurrent functions faster - instead of running the do_something function twice in a row, lets
-# instead turn these into threads
 @funcname
 def run_two_threads_async():
-# Requirement:  this requires the 'import threading' statement and execute the .start() and .join() methods.
+    '''
+        use python threading to run concurrent functions faster - instead of running the do_something function twice in a row, lets
+        instead turn these into threads.
+
+        this requires the 'import threading' statement and executes the .start()
+    '''
 
     start = start_timer()
     # define the two threads - pass the function name we wish to execute to the 'target' parameter
@@ -79,10 +85,13 @@ def run_two_threads_async():
     time.sleep(3)
 
 # --------------------------------- 3.  execute threading function with .join() method ---------------------------------
-# use the '.join()' method to instruct the threading function to finish execution before cmoving on to the rest of the script.
-
 @funcname
 def run_two_threads_with_join():
+    '''
+        use the '.join()' method to instruct the threading function to finish execution before moving on
+        to the rest of the script.
+
+    '''
 # Requirement:  this requires the 'import threading' statement and execute the .start() and .join() methods
 # each thread has a sleep delay of TWO SECONDS
 
@@ -108,12 +117,12 @@ def run_two_threads_with_join():
 # --------------------------------- 4. using a thread list to run multiple threads asynchronously ---------------------------------
 @funcname
 def run_ten_threads_with_threadlist():
-    # running 10 THREADS asynchronously - each thread has a ONE SECOND sleep funcname
-
-    # Similar to above, but add each thread to a thread list and loop thru the thread to do .join() instead of coding individually per thread
-    # - create a for loop to do the following: create and start each thread, then append each thread to a thread list
-    # - create another for- loop to loop thru the created thread list to allow ALL threads to run asynchronously and completed
-    #   before executing the next line in the script.
+    '''
+        This function runs 10 THREADS asynchronously - this is a better way to code threading with multiple threads:
+        -   create a for loop to do the following: create and start each thread, then append each thread to a thread list
+        -   create another for- loop to loop thru the created thread list to do <thread>.join() to allow ALL threads to complete
+            before executing the next line in the script
+    '''
 
     start = start_timer()
     threads = []
@@ -141,11 +150,58 @@ def run_ten_threads_with_threadlist():
 # BEGINNING PYTHON 3.2, the 'concurrent.futures' can be used in place of threading without the need to do a .start()
 # and join() on inividual threads.
 # ------------------------------------------ 5.  using concurrent futures --------------------------------------------
-#
-# run 5 THREADS with varying seconds - longest is 2 seconds
+
 @funcname
-def concurrent_threading_basic():
-    # Requirement:  This function uses 'concurrent.futures.ThreadPoolExecutor' with executor.submit()
+def conc_futures_threading():
+    '''
+        Create and execute multitheading using 'concurrent.futures.ThreadPoolExecutor'. The concurrent.futures module
+        provides a high-level interface for asynchronously executing callables. The asynchronous execution can be
+        performed with threads, using `ThreadPoolExecutor` subclass.
+
+        - there is no need to specify thread.start() and thread.join()
+        - Executor is an abstract class that provides methods to execute calls ASYNCHRONOUSLY
+        - Executor object uses submit() method to schedule the callable
+        - requires to call executor.shutdown() with no args - this will wait for the futures to complete
+
+        Note on ThreadPoolExecutor's "max_workers" argument:
+            ThreadPoolExecutor() provides a max_worker argument which provides us with a pool of X threads to
+            execute calls ASYNCHRONOUSLY.  If max_worker=None or not provided, python will set the thread number
+            to os.cpu_count().  As of Python3.8, it sets the number to os.cpu_count() + 4, or 32, whichever is lower.
+
+        This function run 5 THREADS with varying seconds - longest is 2 seconds. The ThreadPoolExecutor is provided
+        with "max_workers=None".  Each executor.submit() method (10 in all) creates a future object, calls the "do_futures"
+        function along with the time.sleep() value for each future object.
+
+
+    '''
+    start = start_timer()
+
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=None)
+    f1 = executor.submit(do_something2, 0.5)
+    f2 = executor.submit(do_something2, 1.25)
+    f3 = executor.submit(do_something2, 1.50)
+    f4 = executor.submit(do_something2, 1.75)
+    f5 = executor.submit(do_something2, 2)
+
+    executor.shutdown()
+
+    print(f1.result())
+    print(f2.result())
+    print(f3.result())
+    print(f4.result())
+    print(f5.result())
+
+
+    print(f'{total_time(start)}\n')
+
+# ----------------------- 6.  write concurrent futures ThreadPool as context manager  -----------------------
+@funcname
+def conc_futures_thrd_context_mgr():
+    '''
+        When written as context manager "with ThreadPoolExecutor()", there is no need to code for shutdown(),
+        as the context manager includes IMPLICIT "shutdown()" call, which waits for the futures to complete
+        before the executor shuts down.
+    '''
 
     start = start_timer()
 
@@ -165,44 +221,48 @@ def concurrent_threading_basic():
 
     print(f'{total_time(start)}\n')
 
-# ------------------ 6.  using concurrent futures to run mutiple threads with as_completed ------------------
-# use do_thread_concurrent_futures function with the DEFAULT max_workers value assigned by python
-# this function uses the 'as_completed()' function which  prints the thread results in the order they are completed
-
+# ------------------ 7.  using concurrent futures to run mutiple threads with as_completed ------------------
 @funcname
-def concurrent_thread_as_completed():
+def conc_futures_thrd_as_completed():
+    '''
+        This function uses the concurrent.futures 'as_completed()' method. It is implemented in the for- loop 
+        where the results are to be printed in the order "as they are completed". 
+        
+        Meanwhile, the executor.submit is written differently, this time as a list comprehension, with the
+        number of futures objects equal to the length of the secs list - "secs" list contains the list of numbers
+        corresponds to the time.sleep() value for each future object that the executor.submit() creates in the 
+        ist cmprehension.
+
+    '''
 
     start = start_timer()
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = [executor.submit(do_thread_concurrent_futures, sec) for sec in secs]
+        results = [executor.submit(do_futures, sec) for sec in secs]
 
         for f in concurrent.futures.as_completed(results):
             print(f.result())
 
     print(f'{total_time(start)}\n')
 
-# -------------------------------------  7. threading pool executor using executor.map  ------------------------------
-# use concurrent_futures.ThreadPoolExecutor executor map()
-# with executor.map, it will return the results in the order that they were started, NOT the order as they completed
-
-# NOTE 1:
-# the executor.map() function in itself does not wait for all threads to complete, but writing the executor.map() within
-# a context manager  ensures that all threads are completed before python executes the rest of the script
-
-# NOTE 2:
-# The speed in which this function is executed is DEPENDENT ON the 'max_workers' value provided
-# by default, NOT PROVIDING the "max_workers" argument would produce faster result
+# -------------------------------------  8. threading pool executor using executor.map  ------------------------------
 @funcname
-def conc_future_thrd_with_executor_map():
+def conc_futures_thrd_with_executor_map():
+    '''
+        Using concurrent_futures.ThreadPoolExecutor executor map():
+        
+        The 'executor.map()' replaces the 'executor.submit()', and the syntax follows closely to the regular map() function.  
+        
+        In the meantime, for- loop for displaying the thread results show each thread result  is displayed in the order it was started.
+
+    '''
 
     start = start_timer()
 
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = executor.map(do_thread_concurrent_futures, secs)
+        results = executor.map(do_futures, secs)
 
         for result in results:
             print(result)
@@ -210,23 +270,24 @@ def conc_future_thrd_with_executor_map():
     print(f'{total_time(start)}\n')
 
 
-# --------------------------- 8. threading pool executor using max_workers args passed ------------------------------
-# use concurrent_futures.ThreadPoolExecutor executor map()
-# with executor.map, it will return the results in the order that they were started, NOT the order as they completed
-
-# NOTE :
-# The speed in which this function is executed is DEPENDENT ON the 'max_workers' value (if passed as an argument).
-# By default, NOT PROVIDING the "max_workers" argument would produce faster result
-
+# --------------------------- 9. threading pool executor using max_workers args passed ------------------------------
 @funcname
-def conc_future_thrd_with_max_workers(max_workers):
+def conc_futures_thrd_with_max_workers(max_workers):
+    '''
+        Use concurrent_futures.ThreadPoolExecutor executor map().  For this function, we are passing the 
+        ""max_workers" argument to the executor object.
+
+        NOTE :
+        The speed in which this function is executed is DEPENDENT ON the 'max_workers' value (if passed as an argument).
+        By default, NOT PROVIDING the "max_workers" argument would produce faster result
+    '''
 
     start = start_timer()
     print(f'\n{max_workers = }\n')
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = executor.map(do_thread_concurrent_futures, secs)
+        results = executor.map(do_futures, secs)
 
         for result in results:
             print(result)
@@ -234,16 +295,21 @@ def conc_future_thrd_with_max_workers(max_workers):
     print(f'{total_time(start)}\n')
 
 if __name__ == '__main__':
-    # calling a function twice normally with no threading 
-    call_func_twice_no_threading()                         
+
+    # This program shows the different ways to create multi-threading function (except for 'call_func_twice_no_threads').
+    # Each function shows the total time of execution.
+
+    # calling a function twice normally with no threading
+    call_func_twice_no_threading()
 
     ### following three functions use threading.Thread
     run_two_threads_async()                            # calling a function twice using basic threading and running asynchronously
-    run_two_threads_with_join()                 # calling a function twice using basic threading and running asynchronously
-    run_ten_threads_with_threadlist()           # threading running 10 threads asynchronously using thread list
+    run_two_threads_with_join()                        # calling a function twice using basic threading and running asynchronously
+    run_ten_threads_with_threadlist()                  # threading running 10 threads asynchronously using thread list
 
     ### the recommended way to do threading is to use concurrent.futures.ThreadPoolExecute, with four examples as shown below:
-    concurrent_threading_basic()                # basic concurrent.futures.ThreadPool with 'executor.submit()'
-    concurrent_thread_as_completed()            # use multithreading with concurrent.futures ThreadPoolExecutor() and as_completed()
-    conc_future_thrd_with_executor_map()       # use multithreading with concurrent.futures ThreadPoolExecutor() and executor.map()
-    conc_future_thrd_with_max_workers(5)       # use multithreading with concurrent.futures ThreadPoolExecutor() passing max_workers arg
+    conc_futures_threading()                            # basic concurrent.futures.ThreadPool
+    conc_futures_thrd_context_mgr()                     # writing concurrent.futures.ThreadPool as context manager
+    conc_futures_thrd_as_completed()                    #  concurrent.futures ThreadPoolExecutor() using as_completed()
+    conc_futures_thrd_with_executor_map()               # concurrent.futures ThreadPoolExecutor() using executor.map()
+    conc_futures_thrd_with_max_workers(5)               # concurrent.futures ThreadPoolExecutor() passing max_workers argument
