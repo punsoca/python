@@ -74,7 +74,7 @@ def run_two_threads_async():
 
     # to run the thread objects  we need to do a start() method on each thread
     # EXPECTATION: The function executes 'Finish executing' print statement  as soon as 't1.start()' and 't2.starts()' are executed
-    # while t1 and t2 threads are in sleep mode - WITHOUT WAITING FOR COMPLETION OF  t1 and t2 thread execution.
+    # WITHOUT WAITING FOR COMPLETION OF  t1 and t2 thread execution.  Execution time is ZERO seconds.
 
     t1.start()
     t2.start()
@@ -92,8 +92,12 @@ def run_two_threads_with_join():
         to the rest of the script.
 
     '''
-# Requirement:  this requires the 'import threading' statement and execute the .start() and .join() methods
-# each thread has a sleep delay of TWO SECONDS
+# Requirement:  this requires the 'import threading' statement to execute do_something(). This multi-threading function
+# uses the Thread.join() in addition to Thread.start().  Expected total execution time for both threads is ~1 second.
+#
+# Unlike the run_two_threads_async() function - this time, with the Thread.join() method implemented, python waits for
+# the completion of the two threads before it runs the "Finishing executing..." and printing total execution time.
+#
 
     start = start_timer()
     # define the two threads - pass the function name we wish to execute to the 'target' parameter
@@ -118,10 +122,9 @@ def run_two_threads_with_join():
 @funcname
 def run_ten_threads_with_threadlist():
     '''
-        This function runs 10 THREADS asynchronously - this is a better way to code threading with multiple threads:
-        -   create a for loop to do the following: create and start each thread, then append each thread to a thread list
-        -   create another for- loop to loop thru the created thread list to do <thread>.join() to allow ALL threads to complete
-            before executing the next line in the script
+        This function runs 10 THREADS asynchronously USING for-loop - this is a better way to create multiple threads, 
+        BUT this requires the multiple threads to be added to a thread list, with the explanation provided in the code 
+        comments below.
     '''
 
     start = start_timer()
@@ -133,18 +136,15 @@ def run_ten_threads_with_threadlist():
         # every time a thread is created, it should be started by calling  .start() method on the thread object
         t.start()
 
-        # we cannot put a "t.join()" within the same for-loop as the "t.start()", because this would just start and complete one thread per loop
-        # which is similar to running one thread at a time.  The correct way is that after the multi-threads have been created and started, append
-        # these threads into a thread list
+        # NOTE: You CANNOT put a "t.join()" within the same for-loop as the "t.start()", threads would behave as if they are run synchronously!
+        # When creating thread using a loop, we need to create a thread list and join each thread to the list.
         threads.append(t)
 
-    # after the multiple threads are added to the thread list, create another for- loop through the thread list and run the join() method
-    # on each thread to ensure that these threads can run concurrently, and allow all threads to finish running before executing the
-    # next line in the script.
+    # after the threads are added to the thread list, we need a SEPARATE for- loop to execute the .join() method for each thread in the
+    # thread list.  Doing this allows python to WAIT UNTIL ALL THREADS ARE COMPLETED before python runs the "total_time" print statement.
     for thread in threads:
         thread.join()
 
-        # print(total_time(start))
     print(f'{total_time(start)}\n')
 
 # BEGINNING PYTHON 3.2, the 'concurrent.futures' can be used in place of threading without the need to do a .start()
@@ -300,11 +300,11 @@ if __name__ == '__main__':
     # Each function shows the total time of execution.
 
     # calling a function twice normally with no threading
-    call_func_twice_no_threading()
+    call_func_twice_no_threading()                     # regular function call - function called twice
 
     ### following three functions use threading.Thread
-    run_two_threads_async()                            # calling a function twice using basic threading and running asynchronously
-    run_two_threads_with_join()                        # calling a function twice using basic threading and running asynchronously
+    run_two_threads_async()                            # running one function concurrently using two threads with start() only
+    run_two_threads_with_join()                        # run a function concurrently with two threads using start() and join()
     run_ten_threads_with_threadlist()                  # threading running 10 threads asynchronously using thread list
 
     ### the recommended way to do threading is to use concurrent.futures.ThreadPoolExecute, with four examples as shown below:
