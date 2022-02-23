@@ -6,13 +6,19 @@
     - function "concurrent_futures_process_pool_submit()" uses  'executor.submit()'
     - function "concurrent_futures_process_pool_map()")   uses  'executor.map()'
 
+    Run this module - it will create a 'blurred_image' folder, apply Gaussian blur to each
+    of the 15 images and save them into the blurred_image folder with the same name.  Total
+    execution time for both execute.submit() and execute.map() are almost identical (total runtime
+    of  just ~3 seconds when running it on Mac 2020 with os.cpu_count of 12).
+
+
+    Miscellaneous:
+    --------------
     This module uses pathlib.Path library to specify file path:
         - use Path() object instead of "os.path"
         - use Path.mkdir() method to create folders
 
     It also uses the PIL.image() and PIL.ImageFilter()  to process image files
-    NOTE: Image object's save() method cannot read pathlib.Path() objects, so we need to
-          convert the path into a string value first.
 
 
 '''
@@ -57,7 +63,7 @@ def process_image(img_name):
     img = img.filter(ImageFilter.GaussianBlur(15))
     img.thumbnail(size)
 
-    # write the Image object "img" to destination file
+    # write the blurred Image object "img" to destination file
     dest_file = f'{destination}/{img_name}'
     img.save(dest_file)
 
