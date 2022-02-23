@@ -1,12 +1,19 @@
 '''
-    MULTI-PROCESSING USING 'concurrent.futures.ProcessPoolExecutor()
+    MULTI-PROCESSING USING 'concurrent.futures.ProcessPoolExecutor() that create worker processes.
+    Will provide examples of process pool  wait() and shutdown() examples in a separate module.
 
-    Using concurrent_futures to process multiple images at once
+    This module shows two ways to use the ProcessPoolExecutor:
+    - function "concurrent_futures_process_pool_submit()" uses  'executor.submit()'
+    - function "concurrent_futures_process_pool_map()")   uses  'executor.map()'
 
-    NOTE:
-    This module also demonstrates the use of pathlib.Path library T specify path:
-    - use Path() object use this instead of "os.path":
-    - use Path.mkdir() method to create folders
+    This module uses pathlib.Path library to specify file path:
+        - use Path() object instead of "os.path"
+        - use Path.mkdir() method to create folders
+
+    It also uses the PIL.image() and PIL.ImageFilter()  to process image files
+    NOTE: Image object's save() method cannot read pathlib.Path() objects, so we need to
+          convert the path into a string value first.
+
 
 '''
 import concurrent.futures
@@ -15,8 +22,6 @@ import time
 
 from PIL import Image, ImageFilter
 
-# note - images should have already been downloaded with the thread-images.py script
-source = Path("images")
 img_names = [
     'photo-1516117172878-fd2c41f4a759.jpg',
     'photo-1532009324734-20a7a5813719.jpg',
@@ -35,21 +40,27 @@ img_names = [
     'photo-1549692520-acc6669e2f0c.jpg'
 ]
 
-output_folder = 'processed_images'
+# specify the path of the source and destination images
+fp = (Path(__file__).parent)
+source = Path(fp/"orig_images")
+destination = f'{fp}/blurred_images'
+
+# specify thumbnail size of the images for preview
 size = (1200, 1200)
 
-
-def create_dir_if_not_exist(folder):
-    Path(folder).mkdir(parents=True, exist_ok=True) # preferred for python3.6 and over
-
 def process_image(img_name):
-    img = Image.open(source/img_name)
-
+    '''
+    This method blurs the original images and saves them to the blurred_images folder with the same name
+    '''
+    img = Image.open(f'{source}/{img_name}')
+    # apply Gaussian Blur on an image and specify the thumbnail size for previewing image
     img = img.filter(ImageFilter.GaussianBlur(15))
-
     img.thumbnail(size)
-    img_file = f'{output_folder}/{img_name}'
-    img.save(img_file)
+
+    # write the Image object "img" to destination file
+    dest_file = f'{destination}/{img_name}'
+    img.save(dest_file)
+
     print(f'{img_name} was processed...')
 
 # decorator function 'funcname' is created solely for the purpose of printing the name of the decorated function as it executes
@@ -63,20 +74,27 @@ def funcname(func):
 
 @funcname
 def concurrent_futures_process_pool_submit():
+    """
+        This  function uses ProcessPoolExecution's submit() method
+    """
     t1 = time.perf_counter()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for img in img_names:
             executor.submit(process_image, img)
 
-    # for f in concurrent.futures.as_completed(results):
-    #     print(f.result())
-
     t2 = time.perf_counter()
     print(f'concurrent futures using ProcessPoolExecutor - Finished in {t2-t1} seconds')
 
+def create_destination_folder():
+    # create "blurred_images" folder on same path as python script
+    Path(destination).mkdir(parents=True,exist_ok=True)
+
 @funcname
 def concurrent_futures_process_pool_map():
+    """
+        This  function uses ProcessPoolExecution's map() method
+    """
     t1 = time.perf_counter()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -87,8 +105,8 @@ def concurrent_futures_process_pool_map():
 
 if __name__ == '__main__':
 
-    create_dir_if_not_exist(output_folder)
+    create_destination_folder()
 
-    # concurrent_futures_process_pool_submit()
-
-    concurrent_futures_process_pool_map()
+    # run concurrent_futures two ways:
+    concurrent_futures_process_pool_submit() # concurrent.futures process pool executor method 1
+    concurrent_futures_process_pool_map()    # concurrent.futures process pool executor method 1
