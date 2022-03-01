@@ -35,10 +35,10 @@ def do_something_with_thread_name():
     time.sleep(1)
     print( threading.currentThread().getName(), ' is done sleeping.')
 
-def do_futures(seconds):
-    print(f'Sleeping {seconds} second(s)...')
+def run_workers(seconds):
+    print(f'{threading.currentThread().getName()} sleeping begin {seconds} second(s)...')
     time.sleep(seconds)
-    return f'Done sleeping {seconds} seconds.'
+    return f'{threading.currentThread().getName()} done sleeping for {seconds} seconds.'
 
 # decorator function 'funcname' is created solely for the purpose of printing the name of the decorated function as it executes
 def funcname(func):
@@ -177,7 +177,7 @@ def conc_futures_threading():
             to os.cpu_count().  As of Python3.8, it sets the number to os.cpu_count() + 4, or 32, whichever is lower.
 
         This function run 5 THREADS with varying seconds - longest is 2 seconds. The ThreadPoolExecutor is provided
-        with "max_workers=None".  Each executor.submit() method (10 in all) creates a future object, calls the "do_futures"
+        with "max_workers=None".  Each executor.submit() method (10 in all) creates a future object, calls the "run_workers"
         function along with the time.sleep() value for each future object.
 
 
@@ -185,11 +185,11 @@ def conc_futures_threading():
     start = start_timer()
 
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=None)
-    f1 = executor.submit(do_something2, 0.5)
-    f2 = executor.submit(do_something2, 1.25)
-    f3 = executor.submit(do_something2, 1.50)
-    f4 = executor.submit(do_something2, 1.75)
-    f5 = executor.submit(do_something2, 2)
+    f1 = executor.submit(run_workers, 0.5)
+    f2 = executor.submit(run_workers, 1.25)
+    f3 = executor.submit(run_workers, 1.50)
+    f4 = executor.submit(run_workers, 1.75)
+    f5 = executor.submit(run_workers, 2)
 
     executor.shutdown()
 
@@ -214,11 +214,11 @@ def conc_futures_thrd_context_mgr():
     start = start_timer()
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        f1 = executor.submit(do_something2, 0.5)
-        f2 = executor.submit(do_something2, 1.25)
-        f3 = executor.submit(do_something2, 1.50)
-        f4 = executor.submit(do_something2, 1.75)
-        f5 = executor.submit(do_something2, 2)
+        f1 = executor.submit(run_workers, 0.5)
+        f2 = executor.submit(run_workers, 1.25)
+        f3 = executor.submit(run_workers, 1.50)
+        f4 = executor.submit(run_workers, 1.75)
+        f5 = executor.submit(run_workers, 2)
 
         print(f1.result())
         print(f2.result())
@@ -247,7 +247,7 @@ def conc_futures_thrd_as_completed():
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = [executor.submit(do_futures, sec) for sec in secs]
+        results = [executor.submit(run_workers, sec) for sec in secs]
 
         for f in concurrent.futures.as_completed(results):
             print(f.result())
@@ -258,19 +258,21 @@ def conc_futures_thrd_as_completed():
 @funcname
 def conc_futures_thrd_with_executor_map():
     '''
-        Using concurrent_futures.ThreadPoolExecutor executor map():
+        Using concurrent_futures.ThreadPoolExecutor executor map() - this generates 10 futures to the ThreadPool:
 
         The 'executor.map()' replaces the 'executor.submit()', and the syntax follows closely to the regular map() function.
 
         In the meantime, for- loop for displaying the thread results show each thread result  is displayed in the order it was started.
 
+        This function illustrates the use of "thread_name_prefix=" parameter for the ThreadPoolExecutor class.  Here it assigns each
+        worker thread name with the prefix "task1".
     '''
 
     start = start_timer()
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(thread_name_prefix='task1') as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = executor.map(do_futures, secs)
+        results = executor.map(run_workers, secs)
 
         for result in results:
             print(result)
@@ -278,7 +280,7 @@ def conc_futures_thrd_with_executor_map():
     print(f'{total_time(start)}')
 
 
-# --------------------------- 9. threading pool executor using max_workers args passed ------------------------------
+# --------------------------- 9. threading pool executor map with max_workers arg passed ------------------------------
 @funcname
 def conc_futures_thrd_with_max_workers(max_workers):
     '''
@@ -286,16 +288,25 @@ def conc_futures_thrd_with_max_workers(max_workers):
         ""max_workers" argument to the executor object.
 
         NOTE :
-        The speed in which this function is executed is DEPENDENT ON the 'max_workers' value (if passed as an argument).
-        By default, NOT PROVIDING the "max_workers" argument would produce faster result
+
+        This method passes the max_worker= arg to ThreadPoolExecutor. By default, NOT PASSING the max_workers arg
+        (as in the previous method) would run FASTER as it utilzes the os.cpu_count() value.
+
+        I know... threads are I/O bound so whats the cpu count got to do with it? Well, just take a peek at
+        the stackoverflow link below that explains it more succinctly:
+
+        https://stackoverflow.com/questions/56195679/why-is-threadpoolexecutors-default-max-workers-decided-based-on-the-number-of-c
+
+
+        This methd uses 'task2' as the worker thread prefix   (thread_name_prefix='task2')
     '''
 
     start = start_timer()
     print(f'\n{max_workers = }\n')
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='task2') as executor:
         secs = [5, 4, 3, 2, 1, 2, 3 ,4, 1, 5]
-        results = executor.map(do_futures, secs)
+        results = executor.map(run_workers, secs)
 
         for result in results:
             print(result)
