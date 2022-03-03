@@ -1,15 +1,16 @@
 '''
     MULTI-PROCESSING USING 'concurrent.futures.ProcessPoolExecutor() that create worker processes.
-    Will provide examples of process pool  wait() and shutdown() examples in a separate module.
+    Based on https://www.youtube.com/watch?v=fKl2JW_qrso&t=1413s tutorial video (not mine) at the 31:30 mark.
 
     This module shows two ways to use the ProcessPoolExecutor:
     - function "concurrent_futures_process_pool_submit()" uses  'executor.submit()'
-    - function "concurrent_futures_process_pool_map()")   uses  'executor.map()'
+    - function "concurrent_futures_process_pool_map()")   uses  'executor.map()'  - the preferred way
 
     Run this module - it will create a 'blurred_image' folder, apply Gaussian blur to each
-    of the 15 images and save them into the blurred_image folder with the same name.  Total
-    execution time for both execute.submit() and execute.map() are almost identical (total runtime
-    of  just ~3 seconds when running it on Mac 2020 with os.cpu_count of 12).
+    of the 15 images and save them into the "blurred_images" folder with the same name.  The blurring process
+    is executed twice - once by 'concurrent_futures_process_pool_submit()' and another by 
+    'concurrent_futures_process_pool_map()' function. Total execution time for both functions is almost 
+    identical (total runtime of just ~3 seconds when running it on Mac 2020 with os.cpu_count of 12).
 
 
     Miscellaneous:
@@ -54,6 +55,11 @@ destination = f'{fp}/blurred_images'
 # specify thumbnail size of the images for preview
 size = (1200, 1200)
 
+
+def create_destination_folder():
+    # create "blurred_images" folder on same path as python script
+    Path(destination).mkdir(parents=True,exist_ok=True)
+
 def process_image(img_name):
     '''
     This method blurs the original images and saves them to the blurred_images folder with the same name
@@ -69,7 +75,7 @@ def process_image(img_name):
 
     print(f'{img_name} was processed...')
 
-# decorator function 'funcname' is created solely for the purpose of printing the name of the decorated function as it executes
+# decorator function 'funcname' displays function name in console output for debugging purposes
 def funcname(func):
     def wrapper_function(*args, **kwargs):
         print(f'\n... Executing Function "{func.__name__}()" ...\n')
@@ -77,6 +83,7 @@ def funcname(func):
         print(f'\n... Function "{func.__name__}()" completed!\n')
 
     return wrapper_function
+
 
 @funcname
 def concurrent_futures_process_pool_submit():
@@ -92,9 +99,6 @@ def concurrent_futures_process_pool_submit():
     t2 = time.perf_counter()
     print(f'concurrent futures using ProcessPoolExecutor - Finished in {t2-t1} seconds')
 
-def create_destination_folder():
-    # create "blurred_images" folder on same path as python script
-    Path(destination).mkdir(parents=True,exist_ok=True)
 
 @funcname
 def concurrent_futures_process_pool_map():
@@ -112,7 +116,6 @@ def concurrent_futures_process_pool_map():
 if __name__ == '__main__':
 
     create_destination_folder()
-
-    # run concurrent_futures two ways:
-    concurrent_futures_process_pool_submit() # concurrent.futures process pool executor method 1
-    concurrent_futures_process_pool_map()    # concurrent.futures process pool executor method 1
+    
+    concurrent_futures_process_pool_submit()
+    concurrent_futures_process_pool_map()
